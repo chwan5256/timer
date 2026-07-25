@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>업무용 타이머</title>
+<title>교사용 타이머</title>
 <style>
   :root{
     --bg:#0b1220; --panel:rgba(22,33,46,.72); --panel2:rgba(29,43,58,.8); --line:rgba(120,160,200,.18);
@@ -186,6 +186,40 @@
   .bclose{background:#fff;color:#111;}
   .bsnooze{background:var(--amber);color:#3a2800;}
 
+  /* ── 뽑기 ── */
+  .pickerWrap{width:100%;max-width:680px;display:flex;flex-direction:column;gap:14px;}
+  #rosterInput{width:100%;text-align:left;font-weight:600;font-size:15px;line-height:1.5;resize:vertical;}
+  .drawResult{margin-top:12px;min-height:86px;display:flex;align-items:center;justify-content:center;
+    font-size:clamp(30px,6.5vh,54px);font-weight:900;letter-spacing:1px;color:var(--teal);
+    background:var(--panel2);border:1px dashed var(--line);border-radius:16px;padding:14px;text-align:center;word-break:keep-all;
+    transition:transform .15s;}
+  .drawResult.rolling{color:var(--amber);}
+  .drawResult.final{transform:scale(1.04);text-shadow:0 0 34px var(--teal-d);}
+  .groupGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:12px;}
+  .gcard{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+  .gcard b{color:var(--amber);font-size:14px;letter-spacing:1px;}
+  .gcard div{margin-top:6px;font-weight:700;line-height:1.6;font-size:15.5px;word-break:keep-all;}
+  /* ── 소음 측정 ── */
+  .noiseWrap{width:100%;max-width:640px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .noiseLight{font-size:clamp(60px,13vh,110px);line-height:1;transition:filter .2s;}
+  .noiseLevel{font-size:clamp(52px,13vh,110px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1;}
+  .noiseStatus{font-size:clamp(16px,3vh,22px);font-weight:800;color:var(--muted);letter-spacing:1px;min-height:1.3em;}
+  .noiseBarWrap{position:relative;width:100%;max-width:560px;height:26px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;overflow:hidden;}
+  .noiseBar{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#2dd4bf,#fbbf24 65%,#f87171 90%);transition:width .12s linear;}
+  .noiseThreshMark{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--danger);border-radius:2px;}
+  body.noisy #viewNoise .noiseLight{filter:drop-shadow(0 0 30px #f87171);}
+  .prow{display:flex;gap:8px;align-items:center;margin-bottom:7px;}
+  .prow input[type=text]{width:88px;}
+  .prow .del{background:none;border:none;color:var(--danger);font-size:17px;cursor:pointer;padding:2px 8px;}
+  /* ── 미니 메뉴 ── */
+  .minimenu{position:fixed;top:66px;right:22px;background:var(--panel);backdrop-filter:blur(18px);border:1px solid var(--line);
+    border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:5px;z-index:70;box-shadow:0 16px 44px rgba(0,0,0,.45);}
+  .minimenu button{background:none;border:none;color:var(--text);font-size:15px;font-weight:700;padding:10px 16px;border-radius:9px;cursor:pointer;text-align:left;}
+  .minimenu button:hover{background:var(--teal-d);color:var(--teal);}
+  .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--panel);backdrop-filter:blur(16px);
+    border:1px solid var(--line);border-radius:12px;padding:11px 20px;font-size:14px;font-weight:700;z-index:110;
+    box-shadow:0 12px 34px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s;}
+  .toast.show{opacity:1;}
   .hint{font-size:12px;color:var(--muted);letter-spacing:.5px;text-align:center;padding:4px 0 16px;}
   kbd{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:2px 7px;font-size:11px;}
   @media (max-width:760px){ .notice{left:3vw !important;top:70px !important;width:94vw;} }
@@ -195,14 +229,18 @@
   <div class="aurora"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>
 
   <div class="topbar">
-    <div class="brand"><b>⏱ 업무용 타이머</b><span class="wallclock" id="wallclock">--:--:--</span></div>
+    <div class="brand"><b>⏱ 교사용 타이머</b><span class="wallclock" id="wallclock">--:--:--</span></div>
     <div class="apptabs">
       <button class="apptab active" data-app="timer">타이머</button>
       <button class="apptab" data-app="stopwatch">스톱워치</button>
       <button class="apptab" data-app="clock">시계</button>
       <button class="apptab" data-app="alarm">알람</button>
+      <button class="apptab" data-app="picker">뽑기</button>
+      <button class="apptab" data-app="noise">소음</button>
     </div>
     <div class="tools">
+      <button class="icon" id="pinBtn" title="항상 위 고정 (P)">📍</button>
+      <button class="icon" id="miniBtn" title="미니 창 — 모든 프로그램 위에 표시 (M)">🗔</button>
       <button class="icon" id="noticeBtn" title="공지 보드 (N)">📌</button>
       <button class="icon" id="bellBtn" title="주의집중 벨 (B)">🔔</button>
       <button class="icon" id="gearBtn" title="소리·화면 설정">⚙</button>
@@ -333,6 +371,93 @@
         </div>
       </div>
       <div id="alarmCards"></div>
+      <div class="setup">
+        <h4>🏫 교시 시간표 벨 <label class="switch" style="vertical-align:middle;margin-left:8px"><input type="checkbox" id="periodsOn"><span class="slider"></span></label></h4>
+        <div class="row">
+          <span class="mini">1교시 시작</span><input type="time" id="pStart" value="09:00">
+          <span class="mini">수업</span><input type="number" id="pLen" min="10" max="120" value="50" style="width:56px"><span class="mini">분</span>
+          <span class="mini">쉬는</span><input type="number" id="pBreak" min="0" max="60" value="10" style="width:56px"><span class="mini">분</span>
+          <span class="mini">교시</span><input type="number" id="pCount" min="1" max="10" value="7" style="width:56px">
+          <button class="sbtn" id="pGen">자동 생성</button>
+        </div>
+        <div id="periodList" style="margin-top:10px"></div>
+        <div class="row" style="margin-top:6px">
+          <button class="sbtn" id="pAdd">＋ 교시 추가</button>
+          <span class="mini">각 교시 시작·종료 시각에 차임과 안내 배너가 자동으로 울려요</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 뽑기 ═══ -->
+  <div class="view hidden" id="viewPicker">
+    <div class="pickerWrap">
+      <div class="setup">
+        <h4>명단 <span class="mini" id="rosterCount"></span></h4>
+        <textarea id="rosterInput" rows="4" placeholder="이름을 붙여넣기 하세요 (줄바꿈·쉼표·공백 모두 인식)&#10;예) 김민준, 이서연, 박도윤 ..."></textarea>
+        <div class="row" style="margin-top:9px">
+          <button class="sbtn" id="rosterApply">✔ 명단 적용</button>
+          <span class="mini">또는 번호</span>
+          <input type="number" id="rosterN" min="2" max="99" value="24" style="width:60px">
+          <button class="sbtn" id="rosterGen">1~N 생성</button>
+          <button class="sbtn" id="rosterSave">💾 명단 저장</button>
+        </div>
+        <div class="savedlist" id="myRosters"></div>
+      </div>
+
+      <div class="setup">
+        <h4>🎲 발표자 뽑기</h4>
+        <div class="row">
+          <input type="number" id="drawK" min="1" max="20" value="1" style="width:60px"><span class="mini">명</span>
+          <label class="switch"><input type="checkbox" id="noRepeat" checked><span class="slider"></span></label>
+          <span class="mini">한 번 뽑힌 사람 제외</span>
+          <button class="btn primary" id="drawBtn" style="min-width:110px;font-size:17px;padding:12px 26px">뽑기!</button>
+        </div>
+        <div id="drawResult" class="drawResult">누가 될까요?</div>
+        <div class="row" id="pickedRow" style="margin-top:8px">
+          <span class="mini">뽑힌 사람:</span><div class="savedlist" id="pickedList" style="margin-top:0"></div>
+          <button class="sbtn" id="pickedReset">기록 초기화</button>
+        </div>
+      </div>
+
+      <div class="setup">
+        <h4>👥 모둠 편성</h4>
+        <div class="row">
+          <select id="groupMode" style="width:130px"><option value="count">모둠 수</option><option value="size">모둠당 인원</option></select>
+          <input type="number" id="groupN" min="2" max="30" value="4" style="width:60px">
+          <button class="btn primary" id="groupBtn" style="min-width:130px;font-size:17px;padding:12px 26px">모둠 편성!</button>
+        </div>
+        <div class="row hidden" id="groupExport" style="margin-top:10px">
+          <button class="sbtn" id="gCopy">📋 복사</button>
+          <button class="sbtn" id="gPng">🖼 이미지 저장</button>
+          <button class="sbtn" id="gCsv">📊 엑셀(CSV) 저장</button>
+        </div>
+        <div class="groupGrid" id="groupGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 소음 측정 ═══ -->
+  <div class="view hidden" id="viewNoise">
+    <div class="noiseWrap">
+      <div class="noiseLight" id="noiseLight">🎤</div>
+      <div class="noiseLevel" id="noiseLevel">--</div>
+      <div class="noiseStatus" id="noiseStatus">마이크를 켜면 측정을 시작해요</div>
+      <div class="noiseBarWrap"><div class="noiseBar" id="noiseBar"></div><div class="noiseThreshMark" id="noiseThreshMark"></div></div>
+      <div class="controls">
+        <button class="btn primary" id="noiseStartBtn">🎤 측정 시작</button>
+        <button class="btn ghost" id="noiseResetBtn">최고치 초기화</button>
+      </div>
+      <div class="setup" style="max-width:560px">
+        <div class="pline"><span class="mini">경고 기준 (레벨)</span>
+          <span style="display:flex;gap:8px;align-items:center"><input type="range" id="noiseThresh" min="30" max="95" value="70"><b id="noiseThreshVal" style="width:30px;text-align:right">70</b></span>
+        </div>
+        <div class="pline"><span class="mini">기준 초과 시 경고음</span>
+          <label class="switch"><input type="checkbox" id="noiseBeep" checked><span class="slider"></span></label>
+        </div>
+        <div class="pline"><span class="mini">이번 시간 최고치</span><b id="noiseMax">--</b></div>
+        <div class="mini" style="line-height:1.5">※ 컴퓨터 마이크로 소리 크기(진폭)를 측정한 <b>상대 레벨(0~100)</b>이에요. 절대 데시벨 계측기와는 달라요.<br>※ 처음 시작할 때 브라우저의 마이크 권한을 허용해 주세요.</div>
+      </div>
     </div>
   </div>
   </main>
@@ -387,9 +512,18 @@
     <div class="bs" id="bannerSub"></div>
   </div>
 
-  <div class="hint">
-    <kbd>Space</kbd> 시작/멈춤 · <kbd>L</kbd> 랩 · <kbd>R</kbd> 초기화 · <kbd>F</kbd> 전체화면 · <kbd>↑</kbd><kbd>↓</kbd> ±30초 · <kbd>N</kbd> 공지 · <kbd>B</kbd> 벨 · <kbd>S</kbd> 설정 · <kbd>1~4</kbd> 모드 전환
+  <div class="minimenu hidden" id="miniMenu">
+    <button data-mini="timer">⏱ 타이머 미니 창</button>
+    <button data-mini="notice">📌 공지 미니 창</button>
+    <button data-mini="both">⏱＋📌 둘 다 (통합 창)</button>
   </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="hint">
+    <kbd>Space</kbd> 시작/멈춤·뽑기 · <kbd>L</kbd> 랩 · <kbd>R</kbd> 초기화 · <kbd>F</kbd> 전체화면 · <kbd>↑</kbd><kbd>↓</kbd> ±30초 · <kbd>P</kbd> 고정 · <kbd>M</kbd> 미니창 · <kbd>N</kbd> 공지 · <kbd>B</kbd> 벨 · <kbd>S</kbd> 설정 · <kbd>1~6</kbd> 모드
+  </div>
+  <div class="hint" style="padding-top:0">💡 개선 아이디어·의견은 <a href="mailto:chwan5256@sen.go.kr" style="color:var(--teal);font-weight:700">chwan5256@sen.go.kr</a> 로 보내주세요</div>
 
 <script>
 /* ═══════════ 공통 ═══════════ */
@@ -398,7 +532,7 @@ const body=document.body;
 let app='timer'; // timer | stopwatch | clock | alarm
 
 const S=Object.assign({sound:'chime',vol:70,warn60:true,tick10:true,overtime:false,wake:true,theme:'dark',
-  doneMsgSingle:'',doneMsgSeq:''},
+  doneMsgSingle:'',doneMsgSeq:'',pin:false},
   JSON.parse(localStorage.getItem('tt_settings')||'{}'));
 function saveS(){localStorage.setItem('tt_settings',JSON.stringify(S));}
 $('soundType').value=S.sound;$('vol').value=S.vol;
@@ -439,7 +573,7 @@ function relWake(){try{wakeLock&&wakeLock.release();wakeLock=null;}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running)reqWake();});
 
 /* ═══════════ 앱 모드 전환 ═══════════ */
-const views={timer:'viewTimer',stopwatch:'viewStopwatch',clock:'viewClock',alarm:'viewAlarm'};
+const views={timer:'viewTimer',stopwatch:'viewStopwatch',clock:'viewClock',alarm:'viewAlarm',picker:'viewPicker',noise:'viewNoise'};
 document.querySelectorAll('.apptab').forEach(t=>t.onclick=()=>switchApp(t.dataset.app));
 function switchApp(a){
   app=a;
@@ -898,6 +1032,7 @@ setInterval(()=>{
   const d=new Date();
   $('wallclock').textContent=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
   checkAlarms(d);
+  checkPeriods(d);
   updateClockView(d);
 },500);
 
@@ -908,20 +1043,500 @@ document.addEventListener('keydown',e=>{
   if(e.code==='Space'){e.preventDefault();
     if(app==='timer')startBtn.click();
     else if(app==='stopwatch')swToggle();
+    else if(app==='picker')doDraw();
   }
   else if(k==='l'&&app==='stopwatch')swLap();
   else if(k==='r'){if(app==='timer')resetTimer();else if(app==='stopwatch')swReset();}
   else if(k==='f')fullscreen();
   else if(k==='n')$('noticeBtn').click();
+  else if(k==='p')setPin(!S.pin);
+  else if(k==='m')toggleMini();
   else if(k==='b')attentionBell();
   else if(k==='s'&&app==='timer'){const s=mode==='single'?$('setupSingle'):$('setupSeq');s.classList.toggle('hidden');}
   else if(k==='1')switchApp('timer');
   else if(k==='2')switchApp('stopwatch');
   else if(k==='3')switchApp('clock');
   else if(k==='4')switchApp('alarm');
+  else if(k==='5')switchApp('picker');
+  else if(k==='6')switchApp('noise');
   else if(e.key==='ArrowUp'&&app==='timer'){e.preventDefault();addTime(30);}
   else if(e.key==='ArrowDown'&&app==='timer'){e.preventDefault();addTime(-30);}
 });
+
+/* ═══════════ 토스트 ═══════════ */
+let toastT=null;
+function toast(msg){
+  const t=$('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+/* ═══════════ 📍 항상 위 고정 (exe 전용) ═══════════ */
+const isExe=location.protocol==='http:'&&location.hostname==='127.0.0.1';
+async function setPin(on){
+  if(!isExe){
+    toast('항상 위 고정은 exe 실행 시에만 가능해요 — 대신 미니 창(🗔/M)을 써보세요');
+    return;
+  }
+  try{
+    const r=await fetch('/pin?on='+(on?'1':'0'));
+    if(!r.ok)throw 0;
+    S.pin=on;saveS();
+    $('pinBtn').classList.toggle('on',on);
+    toast(on?'📍 창을 항상 위에 고정했어요':'고정을 해제했어요');
+  }catch(e){
+    toast('창을 찾지 못했어요. 잠시 후 다시 시도해 주세요');
+  }
+}
+$('pinBtn').onclick=()=>setPin(!S.pin);
+if(isExe&&S.pin){setTimeout(()=>setPin(true),1200);} // 이전 상태 복원
+
+/* ═══════════ 🗔 미니 창 (PiP — 타이머/공지 2종) ═══════════ */
+let miniWin=null,miniInt=null,miniType='timer';
+function swFmtPlain(ms){
+  const cs=Math.floor((ms%1000)/10),s=Math.floor(ms/1000)%60,m=Math.floor(ms/60000)%60,h=Math.floor(ms/3600000);
+  return (h>0?h+':':'')+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+'.'+String(cs).padStart(2,'0');
+}
+function closeMini(){if(miniWin){try{miniWin.close();}catch(e){}}}
+async function openMini(type){
+  $('miniMenu').classList.add('hidden');
+  if(miniWin){closeMini();if(miniType===type)return;await new Promise(r=>setTimeout(r,150));}
+  if(!('documentPictureInPicture' in window)){
+    toast('미니 창은 크롬/엣지 최신 버전에서 지원돼요');
+    return;
+  }
+  miniType=type;
+  try{
+    const size=type==='notice'?{width:330,height:270}:type==='both'?{width:330,height:360}:{width:280,height:150};
+    const pip=await documentPictureInPicture.requestWindow(size);
+    miniWin=pip;
+    $('miniBtn').classList.add('on');
+    const doc=pip.document;
+    const makeTimerSection=(compact)=>{
+      const sec=doc.createElement('div');
+      sec.style.cssText='flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;padding:'+(compact?'10px 8px 8px':'0');
+      const lab=doc.createElement('div');lab.style.cssText='font-size:12px;font-weight:800;color:#2dd4bf;letter-spacing:1px;min-height:1em';
+      const tm=doc.createElement('div');tm.style.cssText='font-size:'+(compact?'42px':'52px')+';font-weight:800;font-variant-numeric:tabular-nums;line-height:1.05';
+      const st=doc.createElement('div');st.style.cssText='font-size:10px;color:#8fa3b8;letter-spacing:3px;text-transform:uppercase';
+      sec.append(lab,tm,st);
+      sec.onclick=()=>{if(app==='timer')startBtn.click();else if(app==='stopwatch')swToggle();};
+      sec.title='클릭: 시작/멈춤';
+      const upd=()=>{
+        if(app==='stopwatch'){
+          lab.textContent='스톱워치';tm.textContent=swFmtPlain(swElapsed);tm.style.color='#e8eef4';
+          st.textContent=swRunning?'RUNNING':'PAUSED';
+        }else{
+          lab.textContent=curLabel||'타이머';
+          if(inOvertime){tm.textContent='+'+fmt((Date.now()-endTime)/1000);tm.style.color='#f87171';}
+          else{
+            tm.textContent=fmt(remain);
+            tm.style.color=(remain<=10&&remain>0)?'#f87171':(total>0&&remain/total<=0.2)?'#fbbf24':'#e8eef4';
+          }
+          st.textContent=stateEl.textContent;
+        }
+      };
+      return {sec,upd};
+    };
+    const makeNoticeSection=()=>{
+      const wrap=doc.createElement('div');
+      wrap.style.cssText='flex:1;display:flex;flex-direction:column;min-height:0';
+      const head=doc.createElement('div');
+      head.textContent='📌 공지 보드';
+      head.style.cssText='flex:none;padding:8px 14px;font-size:12px;font-weight:800;color:#fbbf24;letter-spacing:1px;border-bottom:1px solid rgba(120,160,200,.2)';
+      const bodyEl=doc.createElement('div');
+      bodyEl.style.cssText='flex:1;padding:11px 14px;overflow-y:auto;line-height:1.55;white-space:pre-wrap;word-break:break-all;font-weight:700';
+      wrap.append(head,bodyEl);
+      let lastTxt=null,lastSize=0;
+      const upd=()=>{
+        if(N.text===lastTxt&&N.size===lastSize)return;
+        lastTxt=N.text;lastSize=N.size;
+        bodyEl.innerHTML=linkify(N.text)
+          .replace(/class="em"/g,'style="color:#fbbf24"')
+          .replace(/<a /g,'<a style="color:#2dd4bf" ');
+        bodyEl.style.fontSize=Math.max(12,N.size-2)+'px';
+      };
+      upd();
+      return {sec:wrap,upd};
+    };
+    doc.body.style.cssText='margin:0;height:100vh;display:flex;flex-direction:column;background:#0b1220;color:#e8eef4;font-family:Pretendard,\'Segoe UI\',sans-serif;user-select:none;overflow:hidden'+(type==='timer'?';align-items:center;justify-content:center':'');
+    const updaters=[];
+    if(type==='timer'){
+      const t=makeTimerSection(false);doc.body.append(t.sec);updaters.push(t.upd);
+      toast('🗔 타이머 미니 창이 떠 있어요. 클릭하면 시작/멈춤!');
+    }else if(type==='notice'){
+      doc.body.style.userSelect='text';
+      const n=makeNoticeSection();doc.body.append(n.sec);updaters.push(n.upd);
+      toast('📌 공지 미니 창이 모든 프로그램 위에 떠 있어요');
+    }else{
+      const t=makeTimerSection(true);
+      const div=doc.createElement('div');div.style.cssText='flex:none;height:1px;background:rgba(120,160,200,.25)';
+      const n=makeNoticeSection();
+      doc.body.append(t.sec,div,n.sec);
+      updaters.push(t.upd,n.upd);
+      toast('⏱＋📌 통합 미니 창이 떠 있어요. 위쪽 클릭 = 시작/멈춤');
+    }
+    miniInt=setInterval(()=>updaters.forEach(u=>u()),150);
+    pip.addEventListener('pagehide',()=>{
+      clearInterval(miniInt);miniWin=null;
+      $('miniBtn').classList.remove('on');
+    });
+  }catch(e){
+    toast('미니 창을 열지 못했어요: '+(e.message||e));
+  }
+}
+$('miniBtn').onclick=()=>{
+  if(miniWin){closeMini();return;}
+  $('miniMenu').classList.toggle('hidden');
+};
+document.querySelectorAll('#miniMenu button').forEach(b=>b.onclick=()=>openMini(b.dataset.mini));
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#miniMenu')&&!e.target.closest('#miniBtn'))$('miniMenu').classList.add('hidden');
+});
+function toggleMini(){ if(miniWin)closeMini(); else openMini('timer'); }
+
+/* ═══════════ 🎲 뽑기 (발표자·모둠) ═══════════ */
+let roster=JSON.parse(localStorage.getItem('tt_roster')||'[]');
+let pickedSet=new Set();
+let rolling=false;
+function saveRoster(){localStorage.setItem('tt_roster',JSON.stringify(roster));}
+function parseNames(text){
+  // 엑셀/시트 범위 복사(탭+줄바꿈), 쉼표, 세미콜론 모두 인식
+  let arr=text.split(/[\n\t,;]+/).map(s=>s.trim()).filter(Boolean);
+  // 구분자 없이 공백으로만 나열된 경우("김민준 이서연 …") 공백 분리
+  if(arr.length===1&&/\s/.test(arr[0]))arr=arr[0].split(/\s+/).filter(Boolean);
+  // 엑셀 헤더 단어 제거
+  const HEADERS=['이름','성명','번호','학번','출석번호','no','no.','name','학생','성함'];
+  arr=arr.filter(t=>!HEADERS.includes(t.toLowerCase()));
+  // 숫자(번호 열)와 이름이 섞여 있으면 숫자만 있는 토큰 제거 (전부 숫자면 번호 명단으로 유지)
+  const numeric=t=>/^\d{1,3}$/.test(t);
+  if(arr.some(t=>!numeric(t))&&arr.some(numeric))arr=arr.filter(t=>!numeric(t));
+  const out=[];const seen=new Set();
+  arr.forEach(n=>{if(!seen.has(n)){seen.add(n);out.push(n);}});
+  return out;
+}
+/* 붙여넣는 즉시 자동 적용 */
+$('rosterInput').addEventListener('paste',()=>{
+  setTimeout(()=>{
+    const parsed=parseNames($('rosterInput').value);
+    if(parsed.length>=2){
+      roster=parsed;saveRoster();rosterApplied();
+      $('rosterInput').value=roster.join(', ');
+      toast(`붙여넣기 인식: 명단 ${roster.length}명 자동 적용!`);
+    }
+  },50);
+});
+function rosterApplied(){
+  $('rosterCount').textContent=roster.length?`(${roster.length}명)`:'';
+  pickedSet=new Set();drawPicked();
+}
+$('rosterApply').onclick=()=>{
+  roster=parseNames($('rosterInput').value);
+  saveRoster();rosterApplied();
+  toast(`명단 ${roster.length}명 적용 완료`);
+};
+$('rosterGen').onclick=()=>{
+  const n=Math.max(2,Math.min(99,+$('rosterN').value||24));
+  roster=Array.from({length:n},(_,i)=>String(i+1)+'번');
+  $('rosterInput').value=roster.join(', ');
+  saveRoster();rosterApplied();
+  toast(`1~${n}번 생성 완료`);
+};
+function myRosters(){return JSON.parse(localStorage.getItem('tt_rosters')||'[]');}
+function drawMyRosters(){
+  const box=$('myRosters');box.innerHTML='';
+  myRosters().forEach((r,i)=>{
+    const el=document.createElement('div');el.className='saved';
+    el.innerHTML=`<span>${r.name} (${r.items.length}명)</span><span class="x">×</span>`;
+    el.querySelector('span').onclick=()=>{
+      roster=[...r.items];$('rosterInput').value=roster.join(', ');
+      saveRoster();rosterApplied();toast(`"${r.name}" 명단 불러옴`);
+    };
+    el.querySelector('.x').onclick=ev=>{ev.stopPropagation();const a=myRosters();a.splice(i,1);
+      localStorage.setItem('tt_rosters',JSON.stringify(a));drawMyRosters();};
+    box.appendChild(el);
+  });
+}
+$('rosterSave').onclick=()=>{
+  if(!roster.length){toast('먼저 명단을 적용해 주세요');return;}
+  const name=prompt('명단 이름 (예: 3-2반)','우리 반');if(!name)return;
+  const a=myRosters();a.push({name,items:[...roster]});
+  localStorage.setItem('tt_rosters',JSON.stringify(a));drawMyRosters();
+};
+/* 발표자 뽑기 */
+function shuffleArr(a){const x=[...a];for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]];}return x;}
+function drawPicked(){
+  const box=$('pickedList');box.innerHTML='';
+  [...pickedSet].forEach(n=>{
+    const el=document.createElement('div');el.className='saved';el.style.cursor='default';
+    el.innerHTML=`<span>${n}</span>`;box.appendChild(el);
+  });
+}
+$('pickedReset').onclick=()=>{pickedSet=new Set();drawPicked();toast('뽑기 기록을 초기화했어요');};
+function doDraw(){
+  if(rolling)return;
+  if(!roster.length){toast('먼저 명단을 적용해 주세요 (뽑기 탭 위쪽)');return;}
+  const noRep=$('noRepeat').checked;
+  let pool=noRep?roster.filter(n=>!pickedSet.has(n)):[...roster];
+  const k=Math.max(1,Math.min(20,+$('drawK').value||1));
+  if(pool.length===0){toast('모두 뽑혔어요! 기록 초기화를 눌러 주세요');return;}
+  if(pool.length<k){toast(`남은 인원이 ${pool.length}명이라 ${pool.length}명만 뽑아요`);}
+  const res=$('drawResult');
+  rolling=true;res.classList.add('rolling');res.classList.remove('final');
+  ac().resume&&ac().resume();
+  let t=0;
+  const anim=setInterval(()=>{
+    res.textContent=pool[Math.floor(Math.random()*pool.length)];
+    t+=70;
+    if(t>=1200){
+      clearInterval(anim);
+      const winners=shuffleArr(pool).slice(0,Math.min(k,pool.length));
+      winners.forEach(w=>pickedSet.add(w));
+      res.textContent=winners.join(' · ');
+      res.classList.remove('rolling');res.classList.add('final');
+      drawPicked();
+      tone(784,0,0.25,'sine',0.4);tone(1047,0.22,0.5,'sine',0.45);
+      rolling=false;
+    }
+  },70);
+}
+$('drawBtn').onclick=doDraw;
+/* 모둠 편성 */
+let lastGroups=[];
+$('groupBtn').onclick=()=>{
+  if(!roster.length){toast('먼저 명단을 적용해 주세요');return;}
+  const modeG=$('groupMode').value;
+  const n=Math.max(2,Math.min(30,+$('groupN').value||4));
+  const shuffled=shuffleArr(roster);
+  let groups=[];
+  if(modeG==='count'){
+    groups=Array.from({length:Math.min(n,shuffled.length)},()=>[]);
+    shuffled.forEach((name,i)=>groups[i%groups.length].push(name));
+  }else{
+    for(let i=0;i<shuffled.length;i+=n)groups.push(shuffled.slice(i,i+n));
+    if(groups.length>1&&groups[groups.length-1].length<Math.ceil(n/2)){
+      const last=groups.pop();
+      last.forEach((name,i)=>groups[i%groups.length].push(name));
+    }
+  }
+  lastGroups=groups;
+  const g=$('groupGrid');g.innerHTML='';
+  groups.forEach((mem,i)=>{
+    const el=document.createElement('div');el.className='gcard';
+    el.innerHTML=`<b>모둠 ${i+1} · ${mem.length}명</b><div>${mem.join(', ')}</div>`;
+    g.appendChild(el);
+  });
+  $('groupExport').classList.remove('hidden');
+  tone(660,0,0.15,'sine',0.35);tone(880,0.15,0.3,'sine',0.4);
+  toast(`${groups.length}개 모둠 편성 완료`);
+};
+/* 내보내기: 복사 */
+function groupsText(){
+  return lastGroups.map((m,i)=>`모둠 ${i+1} (${m.length}명): ${m.join(', ')}`).join('\n');
+}
+$('gCopy').onclick=async()=>{
+  const txt=groupsText();
+  try{await navigator.clipboard.writeText(txt);toast('📋 모둠 결과를 복사했어요');}
+  catch(e){
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);
+    ta.select();document.execCommand('copy');ta.remove();toast('📋 모둠 결과를 복사했어요');
+  }
+};
+/* 내보내기: CSV (엑셀 호환, 한글 BOM) */
+function downloadBlob(blob,filename){
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},300);
+}
+$('gCsv').onclick=()=>{
+  let csv='\uFEFF모둠,이름\n';
+  lastGroups.forEach((m,i)=>m.forEach(name=>{csv+=`모둠 ${i+1},"${name.replace(/"/g,'""')}"\n`;}));
+  const d=new Date();
+  downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),
+    `모둠편성_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`);
+  toast('📊 CSV 파일로 저장했어요 (엑셀에서 열림)');
+};
+/* 내보내기: PNG 이미지 */
+$('gPng').onclick=()=>{
+  const cols=Math.min(3,lastGroups.length);
+  const rows=Math.ceil(lastGroups.length/cols);
+  const cw=340,pad=24,headH=86,lineH=26;
+  const cardHs=lastGroups.map(m=>54+Math.ceil(m.join(', ').length/24+1)*lineH);
+  const rowH=[];
+  for(let r=0;r<rows;r++){rowH.push(Math.max(...cardHs.slice(r*cols,(r+1)*cols)));}
+  const W=pad*2+cols*cw+(cols-1)*16;
+  const H=headH+pad+rowH.reduce((a,b)=>a+b+16,0);
+  const cv=document.createElement('canvas');cv.width=W*2;cv.height=H*2;
+  const ctx=cv.getContext('2d');ctx.scale(2,2);
+  ctx.fillStyle='#0b1220';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#2dd4bf';ctx.font='800 26px "Pretendard","Malgun Gothic",sans-serif';
+  ctx.fillText('👥 모둠 편성 결과',pad,44);
+  const d=new Date();
+  ctx.fillStyle='#8fa3b8';ctx.font='700 14px "Pretendard","Malgun Gothic",sans-serif';
+  ctx.fillText(d.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'})+' · 교사용 타이머',pad,68);
+  let y=headH;
+  lastGroups.forEach((m,i)=>{
+    const r=Math.floor(i/cols),c=i%cols;
+    const x=pad+c*(cw+16);
+    const yy=y+rowH.slice(0,r).reduce((a,b)=>a+b+16,0);
+    const h=rowH[r];
+    ctx.fillStyle='rgba(29,43,58,.95)';
+    ctx.strokeStyle='rgba(120,160,200,.3)';
+    ctx.beginPath();ctx.roundRect(x,yy,cw,h,14);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#fbbf24';ctx.font='800 16px "Pretendard","Malgun Gothic",sans-serif';
+    ctx.fillText(`모둠 ${i+1} · ${m.length}명`,x+16,yy+28);
+    ctx.fillStyle='#e8eef4';ctx.font='700 15px "Pretendard","Malgun Gothic",sans-serif';
+    // 간단 줄바꿈
+    const words=m.join(', ');let line='',ly=yy+54;
+    for(const ch of words){
+      if(ctx.measureText(line+ch).width>cw-32){ctx.fillText(line,x+16,ly);line=ch;ly+=lineH;}
+      else line+=ch;
+    }
+    ctx.fillText(line,x+16,ly);
+  });
+  cv.toBlob(b=>{
+    downloadBlob(b,`모둠편성_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.png`);
+    toast('🖼 이미지로 저장했어요');
+  },'image/png');
+};
+
+/* ═══════════ 🏫 교시 시간표 벨 ═══════════ */
+const P=Object.assign({on:false,items:[]},JSON.parse(localStorage.getItem('tt_periods')||'{}'));
+function saveP(){localStorage.setItem('tt_periods',JSON.stringify(P));}
+$('periodsOn').checked=P.on;
+$('periodsOn').onchange=e=>{P.on=e.target.checked;saveP();toast(P.on?'🏫 교시 벨을 켰어요':'교시 벨을 껐어요');};
+function addMin(hhmm,min){
+  const[h,m]=hhmm.split(':').map(Number);
+  const t=new Date(2000,0,1,h,m+min);
+  return `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+}
+function drawPeriods(){
+  const box=$('periodList');box.innerHTML='';
+  P.items.forEach((p,i)=>{
+    const r=document.createElement('div');r.className='prow';
+    r.innerHTML=`<input type="text" value="${p.name.replace(/"/g,'&quot;')}" placeholder="교시명">
+      <input type="time" value="${p.start}"><span class="mini">~</span>
+      <input type="time" value="${p.end}">
+      <button class="del">✕</button>`;
+    const[nm,st,en]=r.querySelectorAll('input');
+    nm.oninput=()=>{p.name=nm.value;saveP();};
+    st.onchange=()=>{p.start=st.value;saveP();};
+    en.onchange=()=>{p.end=en.value;saveP();};
+    r.querySelector('.del').onclick=()=>{P.items.splice(i,1);saveP();drawPeriods();};
+    box.appendChild(r);
+  });
+}
+$('pGen').onclick=()=>{
+  const start=$('pStart').value||'09:00';
+  const len=Math.max(10,+$('pLen').value||50);
+  const brk=Math.max(0,+$('pBreak').value||10);
+  const cnt=Math.max(1,Math.min(10,+$('pCount').value||7));
+  P.items=[];
+  let cur=start;
+  for(let i=1;i<=cnt;i++){
+    const end=addMin(cur,len);
+    P.items.push({name:`${i}교시`,start:cur,end});
+    cur=addMin(end,brk);
+  }
+  P.on=true;$('periodsOn').checked=true;
+  saveP();drawPeriods();
+  toast(`${cnt}개 교시 시간표 생성 완료 — 벨 ON`);
+};
+$('pAdd').onclick=()=>{
+  const last=P.items[P.items.length-1];
+  const s=last?addMin(last.end,10):'09:00';
+  P.items.push({name:`${P.items.length+1}교시`,start:s,end:addMin(s,50)});
+  saveP();drawPeriods();
+};
+let periodFired={};
+function checkPeriods(now){
+  if(!P.on||!P.items.length)return;
+  const hhmm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const dkey=now.toDateString();
+  P.items.forEach(p=>{
+    const ks=dkey+p.start+'s'+p.name,ke=dkey+p.end+'e'+p.name;
+    if(p.start===hhmm&&!periodFired[ks]){
+      periodFired[ks]=1;
+      showBanner(`${p.name} 시작`,`${p.start} ~ ${p.end}`,false);
+      playAlarm();
+    }
+    if(p.end===hhmm&&!periodFired[ke]){
+      periodFired[ke]=1;
+      showBanner(`${p.name} 종료`,'수고했어요! 쉬는 시간 ☕',false);
+      playAlarm();setTimeout(playAlarm,1500);
+    }
+  });
+}
+
+/* ═══════════ 🎤 소음 측정 ═══════════ */
+let noiseOn=false,noiseStream=null,noiseAnalyser=null,noiseRAF=null;
+let noiseSmooth=0,noiseMax=0,overSince=0,lastNoiseBeep=0;
+const NS=Object.assign({thresh:70,beep:true},JSON.parse(localStorage.getItem('tt_noise')||'{}'));
+function saveNS(){localStorage.setItem('tt_noise',JSON.stringify(NS));}
+$('noiseThresh').value=NS.thresh;$('noiseThreshVal').textContent=NS.thresh;
+$('noiseBeep').checked=NS.beep;
+$('noiseThreshMark').style.left=NS.thresh+'%';
+$('noiseThresh').oninput=e=>{NS.thresh=+e.target.value;$('noiseThreshVal').textContent=NS.thresh;
+  $('noiseThreshMark').style.left=NS.thresh+'%';saveNS();};
+$('noiseBeep').onchange=e=>{NS.beep=e.target.checked;saveNS();};
+async function noiseStart(){
+  try{
+    noiseStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  }catch(e){
+    toast('마이크 권한이 필요해요. 브라우저 주소창의 마이크 아이콘에서 허용해 주세요');
+    return;
+  }
+  const c=ac();c.resume&&c.resume();
+  const src=c.createMediaStreamSource(noiseStream);
+  noiseAnalyser=c.createAnalyser();
+  noiseAnalyser.fftSize=2048;
+  src.connect(noiseAnalyser);
+  noiseOn=true;noiseMax=0;overSince=0;
+  $('noiseStartBtn').textContent='⏹ 측정 중지';
+  const buf=new Float32Array(noiseAnalyser.fftSize);
+  const loop=()=>{
+    if(!noiseOn)return;
+    noiseAnalyser.getFloatTimeDomainData(buf);
+    let sum=0;for(let i=0;i<buf.length;i++)sum+=buf[i]*buf[i];
+    const rms=Math.sqrt(sum/buf.length);
+    const db=20*Math.log10(rms+1e-8);           // 약 -80(무음) ~ 0(최대)
+    let lvl=Math.max(0,Math.min(100,(db+72)*(100/66))); // -72dB→0, -6dB→100 상대 매핑
+    noiseSmooth=lvl>noiseSmooth?noiseSmooth*0.6+lvl*0.4:noiseSmooth*0.9+lvl*0.1; // 빠른 상승·느린 하강
+    const v=Math.round(noiseSmooth);
+    if(v>noiseMax){noiseMax=v;$('noiseMax').textContent=noiseMax;}
+    $('noiseLevel').textContent=v;
+    $('noiseBar').style.width=v+'%';
+    let light='🟢',status='조용해요',col='var(--teal)';
+    if(v>=NS.thresh){light='🔴';status='너무 시끄러워요!';col='var(--danger)';}
+    else if(v>=NS.thresh-15){light='🟡';status='조금 소란스러워요';col='var(--amber)';}
+    $('noiseLight').textContent=light;
+    $('noiseStatus').textContent=status;
+    $('noiseStatus').style.color=col;
+    $('noiseLevel').style.color=col;
+    /* 기준 초과 1.5초 지속 + 5초 쿨다운 경고 */
+    const nowT=Date.now();
+    if(v>=NS.thresh){
+      if(!overSince)overSince=nowT;
+      if(nowT-overSince>1500){
+        body.classList.add('noisy');
+        if(NS.beep&&nowT-lastNoiseBeep>5000){lastNoiseBeep=nowT;warnBeep();}
+      }
+    }else{overSince=0;body.classList.remove('noisy');}
+    noiseRAF=requestAnimationFrame(loop);
+  };
+  loop();
+  toast('🎤 소음 측정을 시작했어요');
+}
+function noiseStop(){
+  noiseOn=false;cancelAnimationFrame(noiseRAF);
+  if(noiseStream){noiseStream.getTracks().forEach(t=>t.stop());noiseStream=null;}
+  body.classList.remove('noisy');
+  $('noiseStartBtn').textContent='🎤 측정 시작';
+  $('noiseLight').textContent='🎤';
+  $('noiseStatus').textContent='마이크를 켜면 측정을 시작해요';
+  $('noiseStatus').style.color='';$('noiseLevel').style.color='';
+  $('noiseLevel').textContent='--';$('noiseBar').style.width='0%';
+}
+$('noiseStartBtn').onclick=()=>{noiseOn?noiseStop():noiseStart();};
+$('noiseResetBtn').onclick=()=>{noiseMax=0;$('noiseMax').textContent='--';toast('최고치를 초기화했어요');};
 
 /* exe 모드: 창 닫으면 서버 종료 */
 window.addEventListener('beforeunload',()=>{
@@ -930,6 +1545,7 @@ window.addEventListener('beforeunload',()=>{
 
 /* 초기화 */
 drawMyPresets();drawSeqEditor();drawMySeqs();drawAlarms();drawNotice();buildWorldCards();
+drawPeriods();drawMyRosters();if(roster.length){$('rosterInput').value=roster.join(', ');}rosterApplied();
 loadSegment(300,'');render();swRender();
 </script>
 </body>
